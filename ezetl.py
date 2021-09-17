@@ -7,6 +7,33 @@ import csv
 import json
 import xml.etree.ElementTree as ET
 
+def breakHeader(header):
+    result = []
+    for element in header:
+        text = ''
+        number = ''
+        for char in element:
+            if str.isdigit(char) == True:
+                number += char
+            else:
+                text += char
+        
+        result.append([text, int(number)])
+
+    return result
+
+def restoreHeader(header):
+    result = []
+    for element in header:
+        text = element[0]
+        number = element[1]
+
+        result.append(text + str(number))
+    return result
+
+def sortHeader(header):
+    return restoreHeader(sorted(breakHeader(header)))
+
 def createParser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', '-i', default='./source', nargs='?')
@@ -123,7 +150,7 @@ class TableUnifier(object):
                 reader = csv.reader(tb, delimiter='\t')
                 self.united_header += next(reader)
         
-        self.united_header = sorted(set(self.united_header))
+        self.united_header = sortHeader(set(self.united_header))
         return self.united_header
 
     def transformTableForUnion(self,table_path):
