@@ -7,6 +7,33 @@ import csv
 import json
 import xml.etree.ElementTree as ET
 
+def breakHeader(header):
+    result = []
+    for element in header:
+        text = ''
+        number = ''
+        for char in element:
+            if str.isdigit(char) == True:
+                number += char
+            else:
+                text += char
+        
+        result.append([text, int(number)])
+
+    return result
+
+def restoreHeader(header):
+    result = []
+    for element in header:
+        text = element[0]
+        number = element[1]
+
+        result.append(text + str(number))
+    return result
+
+def sortHeader(header):
+    return restoreHeader(sorted(breakHeader(header)))
+
 def createParser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', '-i', default='./source', nargs='?')
@@ -111,41 +138,19 @@ class TableConvertor(object):
     save_path = '.'
     temp_table_count = 0
 
-class Header(object):
-    def __init__(self, header):
-        # Нужна проверка типа данных переменной header
-        self.header = header
-        for char in header:
-            if str.isdigit(char) == True:
-                self.number += char
-            else:
-                self.word += char
-   
-    def __repr__(self):
-        return self.header
-
-    sort_key = lambda h: [h.word, int(h.number)]
-    header = ''
-    word = ''
-    number = '0'
-
+# TODO Модифицировать функцию сортировки заголовков
 class TableUnifier(object):
     def __init__(self, source_path, save_path):
         self.source_path = source_path
         self.save_path = save_path           
 
     def getUnitedHeader(self):
-        temp_list = []
         for table in glob.glob(f'{self.source_path}/*.tsv'):
             with open(table, 'r') as tb:
                 reader = csv.reader(tb, delimiter='\t')
-                temp_list += next(reader)
+                self.united_header += next(reader)
         
-        temp_list = set(temp_list)
-        for elem in temp_list:
-            self.united_header.append(Header(elem))
-        
-        self.united_header = sorted(self.united_header, key = Header.sort_key)
+        self.united_header = sortHeader(set(self.united_header))
         return self.united_header
 
     def transformTableForUnion(self,table_path):
