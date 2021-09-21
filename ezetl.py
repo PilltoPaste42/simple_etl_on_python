@@ -7,22 +7,6 @@ import csv
 import json
 import xml.etree.ElementTree as ET
 
-# Возможно, стоит создать отдельный класс для заголока и исп. sorted + key
-def breakHeader(header):
-    result = []
-    for element in header:
-        text = ''
-        number = ''
-        for char in element:
-            if str.isdigit(char) == True:
-                number += char
-            else:
-                text += char
-        
-        result.append([text, int(number)])
-
-    return result
-
 def createParser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', '-i', default='./source', nargs='?')
