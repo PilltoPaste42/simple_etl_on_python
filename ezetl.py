@@ -22,7 +22,7 @@ def find_files(path, names, is_recursive):
     result = []
    
     for name in names:
-        if is_recursive == True:
+        if is_recursive:
             result += glob.glob(f'{path}/{name}')
             result += glob.glob(f'{path}/**/{name}')
         else:
@@ -70,7 +70,7 @@ class TableConvertor(object):
             writer = csv.writer(target, delimiter='\t')
             header_flag = False
             for obj in colection:
-                if header_flag == False:
+                if not header_flag:
                     writer.writerow(obj.keys())
                     header_flag = True
                 writer.writerow(obj.values())
@@ -116,7 +116,7 @@ class Header(object):
         # Нужна проверка типа данных переменной header
         self.header = header
         for char in header:
-            if str.isdigit(char) == True:
+            if str.isdigit(char):
                 self.number += char
             else:
                 self.word += char
@@ -124,7 +124,9 @@ class Header(object):
     def __repr__(self):
         return self.header
 
-    sort_key = lambda h: [h.word, int(h.number)]
+    def sort_key(self):
+        return [self.word, int(self.number)]
+    
     header = ''
     word = ''
     number = '0'
@@ -145,7 +147,7 @@ class TableUnifier(object):
         for elem in temp_list:
             self.united_header.append(Header(elem))
         
-        self.united_header = sorted(self.united_header, key = Header.sort_key)
+        self.united_header = sorted(self.united_header, key=Header.sort_key())
         return self.united_header
 
     def transformTableForUnion(self,table_path):
@@ -175,7 +177,7 @@ class TableUnifier(object):
         # В результате, в таблице будут столбцы из всех объединяемых таблиц
         # Примечание: Если изначально столбец отстутствует, то он добавится без данных, только заголовок
         for element in self.united_header:
-            if element in old_header == False:
+            if element not in old_header:
                 new_column = [element] + [' ' for i in range(rows_count - 1)]
                 columns.append(new_column)
 
@@ -227,13 +229,13 @@ if __name__ == '__main__':
     namespace = parser.parse_args(sys.argv[1:])
 
     # TODO: Добввить обработку исключений и вывод сообщений через консоль 
-    if os.path.exists(namespace.input) == False:
+    if not os.path.exists(namespace.input):
         sys.exit(-1)
 
-    if os.path.exists(namespace.output) == False:
+    if not os.path.exists(namespace.output):
         sys.exit(-1)
 
-    if os.path.exists('temp') == True:
+    if os.path.exists('temp'):
         shutil.rmtree('temp')
 
     # Этап 1. поиск подходящих таблиц
@@ -241,14 +243,14 @@ if __name__ == '__main__':
     
     if len(search_result) == 0:
         print(f"Warning! File(s) {namespace.tableName} in {namespace.input} not found.")
-        if namespace.recursiveSearch == False:
+        if not namespace.recursiveSearch:
             print("Try use -r flag for recursive search in directory")
         sys.exit(0)
 
     # Нужна валидация файлов на этом этапе, иначе некоректное преобразование таблиц
     # Этап 2. Копирование файлов из списка и преобразование в формат `.tsv` 
     
-    if os.path.exists('temp') == False:
+    if not os.path.exists('temp'):
         os.mkdir('temp')
 
     convertor = TableConvertor('./temp')
@@ -265,7 +267,7 @@ if __name__ == '__main__':
     # Этап 5. Операции над данными таблицы
 
     # Этап N. Удаление временных файлов и завершение программы
-    if os.path.exists('temp') == True:
+    if os.path.exists('temp'):
         shutil.rmtree('temp')
     sys.exit(0)
 
