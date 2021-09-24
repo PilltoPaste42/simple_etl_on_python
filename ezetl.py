@@ -18,10 +18,18 @@ def createParser():
 
     return parser
     
-def find_files(path, names, is_recursive):
+def find_files(path:str, names:list, is_recursive) -> list:
+    if type(path) != str:
+        raise TypeError('Parameter \'path\' is not str.')
+    
     result = []
    
     for name in names:
+        try:
+            name = str(name)
+        except:
+            continue
+
         if is_recursive:
             result += glob.glob(f'{path}/{name}')
             result += glob.glob(f'{path}/**/{name}')
@@ -29,12 +37,14 @@ def find_files(path, names, is_recursive):
             result += glob.glob(f'{path}/{name}')
     return result
 
-#TODO Переделать систему выдачи имен
 class TableConvertor(object):
-    def __init__(self, save_path):
+    def __init__(self, save_path:str):
+        if type(save_path) != str:
+            raise TypeError('Parameter \'save_path\' is not str.')
+
         self.save_path = save_path 
     
-    def convert_table(self,table_path):
+    def convert_table(self,table_path:str) -> bool:
         if table_path.endswith('.csv'):
             self.convert_csv_to_tsv(table_path)
             return True
@@ -47,8 +57,11 @@ class TableConvertor(object):
         else:
             return False
 
-    def convert_csv_to_tsv(self,table_path):
-        copy_table_path = self.getTempFileName()
+    def convert_csv_to_tsv(self,table_path:str):
+        if type(table_path) != str:
+            raise TypeError('Parameter \'table_path\' is not str.')
+        
+        copy_table_path = self.get_temp_file_path(table_path)
 
         with open(table_path, 'r') as source, open(copy_table_path, 'w+', newline='') as target:
             reader = csv.reader(source)
@@ -57,11 +70,13 @@ class TableConvertor(object):
             for row in reader:
                 if len(row) != 0:
                     writer.writerow(row)
-        
-        self.temp_table_count += 1 
 
-    def convert_json_to_tsv(self, table_path):
-        copy_table_path = self.getTempFileName()
+    def convert_json_to_tsv(self, table_path:str):
+        if type(table_path) != str:
+            raise TypeError('Parameter \'table_path\' is not str.')
+
+        copy_table_path = self.get_temp_file_path(table_path)
+        
         with open(table_path, 'r') as source, open(copy_table_path, 'w+', newline='') as target:
             table_data = json.load(source)
             # Нужно как-то решить проблемму с выбором колекции
@@ -73,12 +88,14 @@ class TableConvertor(object):
                 if not header_flag:
                     writer.writerow(obj.keys())
                     header_flag = True
-                writer.writerow(obj.values())
-        
-        self.temp_table_count += 1
+                writer.writerow(obj.values())     
 
-    def convert_xml_to_tsv(self,table_path):
-        copy_table_path = self.getTempFileName()
+    def convert_xml_to_tsv(self,table_path:str):
+        if type(table_path) != str:
+            raise TypeError('Parameter \'table_path\' is not str.')
+        
+        copy_table_path = self.get_temp_file_path(table_path)
+        
         with open(table_path, 'r') as source, open(copy_table_path, 'w+', newline='') as target:
             writer = csv.writer(target, delimiter='\t')
             tree = ET.parse(source)
@@ -102,18 +119,16 @@ class TableConvertor(object):
                     temp_row.append(column[i])
                 writer.writerow(temp_row)
 
-        self.temp_table_count += 1 
-
-    def getTempFileName(self):
-        copy_table_path = f'{self.save_path}/temp_file_{self.temp_table_count}.tsv'
-        return copy_table_path
+    def get_temp_file_path(self, path:str) -> str:
+        return self.save_path + '/' + os.path.basename(rf'{path}') + '.tsv'
         
     save_path = '.'
-    temp_table_count = 0
 
 class Header(object):
-    def __init__(self, header):
-        # Нужна проверка типа данных переменной header
+    def __init__(self, header:str):
+        if type(header) != str:
+                raise TypeError('Parameter \'Header\' is not str.')
+
         self.header = header
         for char in header:
             if str.isdigit(char):
@@ -121,10 +136,10 @@ class Header(object):
             else:
                 self.word += char
    
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.header
 
-    def sort_key(self):
+    def sort_key(self) -> list:
         return [self.word, int(self.number)]
     
     header = ''
@@ -132,11 +147,16 @@ class Header(object):
     number = '0'
 
 class TableUnifier(object):
-    def __init__(self, source_path, save_path):
+    def __init__(self, source_path:str, save_path:str):
+        if type(save_path) != str:
+            raise TypeError('Parameter \'save_path\' is not str.')
+        if type(source_path) != str:
+            raise TypeError('Parameter \'source_path\' is not str.')
+        
         self.source_path = source_path
         self.save_path = save_path           
 
-    def getUnitedHeader(self):
+    def get_united_header(self) -> list:
         temp_list = []
         for table in glob.glob(f'{self.source_path}/*.tsv'):
             with open(table, 'r') as tb:
@@ -145,12 +165,19 @@ class TableUnifier(object):
         
         temp_list = set(temp_list)
         for elem in temp_list:
-            self.united_header.append(Header(elem))
+            try:
+                new_elem = Header(elem)
+            except TypeError:
+                continue
+            self.united_header.append(new_elem)
         
-        self.united_header = sorted(self.united_header, key=Header.sort_key())
+        self.united_header = sorted(self.united_header, key=Header.sort_key)
         return self.united_header
 
-    def transformTableForUnion(self,table_path):
+    def transform_table_for_union(self,table_path:str):
+        if type(table_path) != str:
+            raise TypeError('Parameter \'table_path\' is not str.')
+        
         columns = []
         rows = []
         columns_count = 0
@@ -177,12 +204,16 @@ class TableUnifier(object):
         # В результате, в таблице будут столбцы из всех объединяемых таблиц
         # Примечание: Если изначально столбец отстутствует, то он добавится без данных, только заголовок
         for element in self.united_header:
-            if element not in old_header:
-                new_column = [element] + [' ' for i in range(rows_count - 1)]
+            if not str(element) in old_header:
+                new_column = [str(element)] + [' ' for i in range(rows_count - 1)]
                 columns.append(new_column)
 
-        # Сортировка столбцов
-        columns = sorted(columns)
+        # Сортировка столбцов 
+        def columns_sort_key(column:list) -> list:
+            header = Header(column[0])
+            return header.sort_key()
+
+        columns = sorted(columns, key=columns_sort_key)
 
         # Запись обработанной таблицы обратно в файл
         with open(table_path, 'w', newline='') as table:
@@ -194,13 +225,13 @@ class TableUnifier(object):
                     temp_row.append(column[i])
                 writer.writerow(temp_row)
 
-    def uniteTables(self):
+    def unite_tables(self) -> str:
         # Получение общего заголовка
-        self.getUnitedHeader()
+        self.get_united_header()
 
         # Преобразование таблиц для объединения
         for table in glob.glob(f'{self.source_path}/*.tsv'):
-            self.transformTableForUnion(table)
+            self.transform_table_for_union(table)
 
         # Открытие/создание файла для результирующей таблицы
         with open(f'{self.save_path}/ezetl_result.tsv', 'w', newline='') as result_file:
@@ -228,11 +259,12 @@ if __name__ == '__main__':
     parser = createParser()
     namespace = parser.parse_args(sys.argv[1:])
 
-    # TODO: Добввить обработку исключений и вывод сообщений через консоль 
     if not os.path.exists(namespace.input):
+        print(f'Error! Directory {namespace.input} does not exist')
         sys.exit(-1)
 
     if not os.path.exists(namespace.output):
+        print(f'Error! Directory {namespace.output} does not exist')
         sys.exit(-1)
 
     if os.path.exists('temp'):
@@ -247,11 +279,10 @@ if __name__ == '__main__':
             print("Try use -r flag for recursive search in directory")
         sys.exit(0)
 
-    # Нужна валидация файлов на этом этапе, иначе некоректное преобразование таблиц
+    # Нужна проверка файлов таблиц на этом этапе, иначе возможно некоректное преобразование таблиц
     # Этап 2. Копирование файлов из списка и преобразование в формат `.tsv` 
     
-    if not os.path.exists('temp'):
-        os.mkdir('temp')
+    os.mkdir('temp')
 
     convertor = TableConvertor('./temp')
     for file in search_result:
@@ -259,7 +290,7 @@ if __name__ == '__main__':
 
     # Этап 3. Объединение файлов
     unifer = TableUnifier('./temp', namespace.output)
-    result_file = unifer.uniteTables()
+    result_file = unifer.unite_tables()
 
     # Этап 4. Сортировка таблицы
     # TODO Создать класс для операций над таблицей
