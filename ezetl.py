@@ -6,6 +6,7 @@ import glob
 import csv
 import json
 import xml.etree.ElementTree as ET
+from operator import itemgetter
 
 def createParser():
     parser = argparse.ArgumentParser()
@@ -254,6 +255,47 @@ class TableUnifier(object):
     source_path = '.'
     united_header = []
 
+class TableSorter(object): 
+    def __init__(self, table_path:str):
+        self.table_path = str(table_path)
+
+        if not os.path.exists(table_path):
+            raise ValueError(f'Table {os.path.basename(table_path)} was not found!')
+
+        with open(table_path, 'r') as source:
+            reader = csv.reader(source, delimiter='\t')
+            for row in reader:
+                if len(row) != 0:
+                    self.table.append(row)
+
+        self.columns_count = len(self.table[0])
+        self.rows_count = len(self.table)
+
+    def updateTable(self):
+        with open(self.table_path, 'w', newline='') as file:
+            writer = csv.writer(file, delimiter='\t')
+            writer.writerows(self.table)
+
+    def sort_by_column(self, columnHeader:str, is_reverse=False):
+        header = str(columnHeader)
+        if not header in self.table[0]:
+            raise ValueError(f'Column with header {header} was not found')
+
+        index = self.table[0].index(header)
+        temp_table = []
+        for row in self.table:
+            if row == self.table[0]:
+                continue
+            temp_table.append(row)
+        
+        self.table = [self.table[0]] + sorted(temp_table, key=itemgetter(index), reverse=is_reverse)
+        self.updateTable()      
+
+    table_path = ''
+    table = []
+    rows_count = -1
+    columns_count = -1
+
 if __name__ == '__main__':
    # Этап 0. Принятие и обработка параметров
     parser = createParser()
@@ -293,7 +335,8 @@ if __name__ == '__main__':
     result_file = unifer.unite_tables()
 
     # Этап 4. Сортировка таблицы
-    # TODO Создать класс для операций над таблицей
+    sorter = TableSorter(result_file)
+    sorter.sort_by_column('D1')
 
     # Этап 5. Операции над данными таблицы
 
