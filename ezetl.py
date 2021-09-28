@@ -10,7 +10,7 @@ from operator import itemgetter
 
 def createParser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input', '-i', default='./source', nargs='?')
+    parser.add_argument('--input', '-i', default='.', nargs='?')
     parser.add_argument('--output', '-o', default='.', nargs='?')
     parser.add_argument('--quiet', '-q', action='store_const', const=False)
     parser.add_argument('--recursiveSearch', '-r', action='store_const', const=False)
